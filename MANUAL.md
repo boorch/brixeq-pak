@@ -420,23 +420,24 @@ Recording is **independent of transport**: REC arms capture immediately, regardl
 
 ### Output
 
-- Files land in the `RECORDINGS` folder on the SD card, named after the current project plus a date / time stamp.
+- Files land in `/mnt/SDCARD/BRIXEQ/RECORDINGS/` on the SD card, named after the current project plus a date / time stamp.
 - Format is standard 16-bit stereo WAV at 48 kHz. Plays in any audio app.
 - Takes longer than 10 seconds are automatically gain-matched so quiet bounces don't come back as whispers.
 - Takes shorter than 5 seconds are auto-deleted, so accidentally tapping REC twice doesn't litter the folder. A "RECORDING CANCELLED" toast confirms the file was discarded.
 - Recordings are safe across power loss: even if the device loses power mid-record, the partial WAV on the SD card is still playable.
+- The `BRIXEQ/` folder lives outside the pak directory, so PAK Store updates do not touch your recordings.
 
 ---
 
 ## 15. Save and load
 
-Projects are saved as `.brixeq` files in the `PROJECTS` folder on the SD card.
+Projects are saved as `.brixeq` files in `/mnt/SDCARD/BRIXEQ/PROJECTS/` on the SD card. The `BRIXEQ/` folder lives outside the pak directory, so PAK Store updates do not touch your saves.
 
 ### Save
 
 SELECT menu, then **save**, then enter a name in the slot-cycling keyboard (12 char max, A-Z 0-9 - _).
 
-A save captures **everything**: every step on every pattern on every track, every scene, the song, master FX per scene, the active scene, BPM. Audio recordings are kept separately in the `RECORDINGS` folder and are not bundled inside project saves.
+A save captures **everything**: every step on every pattern on every track, every scene, the song, master FX per scene, the active scene, BPM. Audio recordings are kept separately in `/mnt/SDCARD/BRIXEQ/RECORDINGS/` and are not bundled inside project saves.
 
 ### Load
 

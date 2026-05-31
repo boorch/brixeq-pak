@@ -8,15 +8,15 @@ Available via **PAK Store** on NextUI. Connect your TrimUI Brick to Wi-Fi, open 
 
 ## User Data
 
-Projects and recordings are stored on the SD card:
+Projects and recordings are stored on the SD card OUTSIDE the pak folder, so they survive PAK Store updates:
 
 ```
-/mnt/SDCARD/Tools/tg5040/BRIXEQ.pak/
+/mnt/SDCARD/BRIXEQ/
 ├── PROJECTS/      saved .brixeq project files
 └── RECORDINGS/    WAV bounces of the master bus
 ```
 
-These folders survive PAK updates.
+You can copy projects and recordings on / off the SD card here without going through the device UI.
 
 ## Manual Installation
 
