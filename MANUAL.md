@@ -267,6 +267,12 @@ In **patterns view** (X to cycle), the column shows the pattern bank. **B-tap** 
 
 Pattern launches are **per-track and live**: they don't fire a scene, don't change scale or master FX, and don't affect other tracks. Use them for fills, breakdowns, A/B switches.
 
+### Pattern copy / paste
+
+In patterns view, the cursor focuses one pattern cell at a time. **Hold R1 and press A** to copy that pattern; **hold R1 and press B** with the cursor on a different cell (any track, any pattern index) to paste. Cross-track is fine: you can clone a melodic figure from T1 P0 into T3 P5 if you want.
+
+The clone covers everything the pattern owns: all 16 steps with their full instrument snapshots, the pattern length, direction, clock divider, default engine, filter mode. A small toast on the footer confirms each operation.
+
 ---
 
 ## 10. Scale and Transpose
@@ -313,6 +319,10 @@ Queued scenes pulse on the strip. Pressing B again on the same cell un-queues. P
 - **Live performance**: pre-bake a setlist of scenes, swap between them mid-show.
 - **Variations**: same patterns, different scale (major vs minor) or different master compressor character.
 
+### Scene copy / paste
+
+Same chord as patterns, on the scenes strip: **R1 + A** on the focused scene cell copies that scene into the clipboard, **R1 + B** on a different scene cell pastes. The clone covers everything the scene stores: the five pattern_idx values, scale, transpose strips, master bus settings, and all 8 modulator slots. Spin a variation by copying scene 0 into scene 1 and then editing one parameter.
+
 Scenes are also the conceptual unit that song mode references (see §13).
 
 ---
@@ -358,7 +368,104 @@ The master page shows a live gain-reduction readout and a peak-decimated mono sc
 
 ---
 
-## 13. Song mode
+## 13. Modulators
+
+Each scene carries 8 **modulator slots**. A modulator is a small LFO (low-frequency oscillator) that nudges a chosen parameter on a chosen track over time: pitch wobble, filter sweep, drum body morph, tempo-synced volume duck, anything a single number on a step can do.
+
+Modulators live alongside transpose, master FX, and pattern_idx in each scene, so swapping scenes swaps the whole modulator setup with everything else. Scene changes (queued live or via song mode) restart every modulator cycle from scratch.
+
+### Entering the mod view
+
+Three entry points, all equivalent:
+
+- **MOD icon** on the topbar (between BPM and MASTER). Hover with the cursor, press B.
+- **SELECT menu** → **modulators**.
+- **R3** stick click: toggles into and out of the mod view from anywhere.
+
+The view is a vertical list of 8 slots. Each row has a curve preview on the left and a strip of cells on the right.
+
+### Per-slot fields
+
+| Field | Meaning |
+|------|---------|
+| **TR** | Target track (T1..T5). Any slot can affect any track. |
+| **D** | Destination parameter. See the destination list below. |
+| **SP** | Speed. One full LFO cycle takes anywhere from 1/16 note to 8 bars. |
+| **WV** | Waveform: sine, triangle, saw up, saw down, square, S&H, noise, constant. |
+| **DP** | Depth. Bipolar; positive depth adds, negative subtracts. Depth **0** means the slot is off (curve drawn faintly to show this). |
+| **RN** | Run mode. FRE (free-running), TRG (resets on each note), ONE (one cycle per note, then freezes). |
+| **SM** | Smoothing. Rounds sharp transitions on square/S&H/saw waveforms. |
+| **SK** | Skew. Bipolar; warps the waveform left or right so a triangle becomes more saw-like, a sine becomes lop-sided, etc. |
+| **PL** | Polarity. BI (centered on zero, swings both ways) or UNI (only above zero, suits envelopes). |
+| **VF** | Vertical offset. Shifts the whole curve up or down before depth scaling. |
+| **OF** | Phase offset. Sets where in the cycle the slot starts when the scene fires. |
+
+### Destinations
+
+The **D** cycle includes both **universal** params (work on every engine) and **engine-specific** params (only take effect when the target track is playing a step on that engine).
+
+Universal (always live):
+
+- Pitch, Volume, Pan, Filter Freq, Filter Q, Filter Env Depth, Delay Send, Reverb Send.
+
+Engine-specific (silent when the target track isn't using that engine):
+
+- **FM**: mod ratio, mod amount, mod feedback, mod attack, mod decay.
+- **VA / VA-Filt / String / Sample**: harmonics, timbre, morph, overdrive.
+- **BD / SD / CY** (drums): timbre, morph, harmonics, model.
+- **NOIZ**: mode (continuous LFO modulation of a 5-way enum is meaningless, so noise mode is author-able but doesn't actually modulate).
+
+Pick any destination freely. If the engine on the target track at fire-time doesn't own that parameter, the slot just doesn't contribute (no error, no noise, no surprise). As soon as a step on that engine fires, the modulation kicks in.
+
+**Pitch modulation respects the active scale.** When a slot targets Pitch, the modulator's bipolar offset is added to the note before the scale's snap pass runs. So on a C major scene, even a +6 semitone modulator nudge lands on a major-scale note (here F or G), not on the F♯ in between. Set the scale to chromatic in the topbar if you want the raw shift through.
+
+### Run modes in detail
+
+- **FRE** (free-running): the LFO ticks continuously from the moment the scene fires. Independent of track triggers. Best for atmospheric drift, slow filter sweeps, breathing pads, evolving room sounds.
+- **TRG** (re-trigger): every real trig on the target track snaps the LFO's phase back to its start and lets it cycle from there. Good for per-note articulation: pitch envelopes, filter snappiness on each hit.
+- **ONE** (one-shot): like TRG but the cycle freezes at its end value. The LFO is essentially an envelope shape now. Combine with S&H (see below) for per-trigger random offsets.
+
+### Sample & hold
+
+Selecting **S&H** for a slot rolls a fresh table of **16 random values** for that slot. The table travels with the project and stays put: re-rolls only happen when you pick S&H again. Each new roll is guaranteed to differ from the previous one by at least 25% of its values, so you never get a near-identical pattern back.
+
+The roll is **per slot**: each of the 8 slots has its own 16 random values, and they're all guaranteed distinct within a session.
+
+How the 16 values get used depends on the run mode:
+
+- **FRE + S&H** and **TRG + S&H**: the cycle walks the full 16-step pattern across each cycle. The waveform looks like a stair-step.
+- **ONE + S&H**: a single value per trigger, advancing one step through the 16 on every retrigger. Great for "random pitch every note" with a guaranteed-bounded set of values.
+
+### Resets and copy
+
+- **A** on a focused cell resets that single field to its default. Track → T1, destination → none, speed → 1/4, waveform → sine, depth → 0, run mode → FRE, polarity → BI, smoothing / skew / phase offset → centred.
+- Modulators travel with their scene, so the **scene copy/paste** gesture (R1+A copy, R1+B paste on the scenes strip) duplicates all 8 modulator slots along with everything else.
+
+### Tips
+
+- Subtle modulation usually means **low depth + slow speed + smoothing turned up**. Depth at ±10..±20 is plenty for most "alive" parameter motion.
+- A drum track with **ONE + S&H on pitch** at a small depth gives every hit a slightly different tuning, which dodges machine-gun feel.
+- A pad with **FRE + sine on Filter Freq**, slow (1 bar+), modest depth, brings a static patch to life.
+- Two slots on the same track but at different speeds + different shapes layer into complex motion. Eight slots is a lot.
+- **R3** is the fastest way in and out. Start playing, hit R3 to tweak a modulator, R3 again to return.
+
+### Arpeggiators via pitch modulation
+
+Because pitch modulation is scale-snapped, a slot targeting pitch effectively becomes an **arpeggiator**: the LFO sweeps the pitch range, but only in-scale notes come out. The waveform decides the arp shape:
+
+- **Saw up** + depth +12 → ascending arp across an octave.
+- **Saw down** + depth +12 → descending arp.
+- **Triangle** → up-then-down arp.
+- **Square** → octave (or any interval) bounce.
+- **S&H** → random arp drawn from the 16-step table.
+
+Speed sets the arp rate (musical division). Depth sets the range. Adjust the scene's scale and the arp shifts with it.
+
+Combine with a TRG run mode so the arp restarts on each note, or FRE so the same arp pattern plays beneath whatever you trigger.
+
+---
+
+## 14. Song mode
 
 A standalone linear scene sequencer. Up to 64 rows of `[SCN | BARS | T1 T2 T3 T4 T5]`.
 
@@ -454,16 +561,18 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 | Button | Action |
 |--------|--------|
 | D-pad | Cursor navigation |
-| **B** (south face) | Edit modifier. Hold plus d-pad to change the focused cell's value; tap alone to toggle trigless |
-| **A** (east face) | Confirm / cut / paste. Single action button on steps; menu confirm in popups |
+| **B** (south face) | Edit modifier. Hold plus d-pad to change the focused cell's value; tap alone to toggle trigless on a populated step |
+| **A** (east face) | On a populated step: cut. On any other focused parameter (transpose cells, footer slots, BPM, scale, master FX, modulator fields): reset to default. Menu confirm in popups |
 | **Y** (west face) | Selection modifier. Hold plus d-pad to drag a selection rectangle |
-| **X** (north face) | Column view cycle on the grid (steps → patterns → transpose) |
+| **X** (north face) | Column view cycle on the grid (steps → patterns → transpose). Works from any cursor region |
 | **L1** | Focus left deck |
 | **L2** | Reserved |
-| **R1** | Focus right deck. Also master copy modifier on the master page |
+| **R1** | Focus right deck. Also clipboard modifier: **R1 + A** copies, **R1 + B** pastes (works for patterns, scenes, and master FX) |
 | **R2** | Reserved |
+| **L3** (left stick click) | Toggle song mode |
+| **R3** (right stick click) | Toggle modulator screen |
 | **START** | Transport play / pause |
-| **SELECT** | Open menu (save, load, record, song mode, quit) |
+| **SELECT** | Open menu (save, load, record, song mode, modulators, help, quit). **SELECT + START** = play from beginning |
 
 ---
 
@@ -471,6 +580,9 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 
 - **Pattern launches beat scene queues for live performance.** Scene queues replace everything (all five patterns plus scale plus transpose plus master FX). Pattern launches swap a single track's pattern. The latter is more granular and lets you build organic transitions.
 - **Use scenes for harmonic motion.** Same patterns, different scale or transpose strip equals a fresh-sounding section without re-authoring 5 patterns.
+- **Duplicate before you mutate.** R1+A copies a pattern or a scene; R1+B pastes it onto another slot. Spin a variation by cloning, then tweaking.
+- **A button = reset.** On any focused parameter that isn't a step (transpose offsets, BPM, scale, master cells, modulator fields), tapping A restores its default value. The fastest "undo my last few edits" gesture.
+- **Modulators are per scene.** 8 LFOs that ride along on every scene swap. R3 to open, R3 again to leave. Try ONE + S&H on pitch for per-note random offsets, or FRE + slow sine on filter freq for a moving pad.
 - **Master sends are envelope-gated.** A snare with a short decay sends a single sharp tap into the reverb; a held pad sustains the send open. Take advantage of this: different envelope shapes give wildly different bus-FX flavours.
 - **Audition before you cut.** B-tap on the focused step plays its snapshot instantly. Pair with A (cut) and a cursor move + A (paste) to clone the exact instrument character to another step without waiting for the sequencer to come around.
 - **Double-tap A to copy.** Cut plus immediate paste-back equals source restored plus clipboard primed. Faster than a dedicated copy gesture.
@@ -495,7 +607,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Track**: one of five concurrent voices.
 - **Pattern**: a 16-step sequence belonging to a track. Each track has 16 patterns.
 - **Step**: one cell in a pattern. Carries a complete instrument snapshot.
-- **Scene**: a snapshot of {one pattern per track, scale, transpose, master FX}. A project has 16.
+- **Scene**: a snapshot of {one pattern per track, scale, transpose, master FX, modulators}. A project has 16.
 - **Song**: a linear list of scene references (and overrides), up to 64 rows long.
 - **Engine**: the synthesis algorithm for a step. Six available: VA, FM, NOIZ, BD, SD, CY.
 - **Trigless**: a step that holds its slot in the grid but doesn't fire.
@@ -503,5 +615,8 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Bar**: 16 master 16th-notes. The unit scene queues and song-row durations work in.
 - **Master 16th**: one tick of the master clock, regardless of any track's clock divider.
 - **Live launch**: a pattern swap on a single track, queued at the next bar.
+- **Modulator**: a small per-scene LFO that nudges a chosen parameter on a chosen track over time. 8 slots per scene.
+- **Run mode** (modulator): FRE = continuous; TRG = phase resets on each note; ONE = one cycle per note, then freezes.
+- **S&H** (sample & hold): a waveform that holds a value for the cycle, then jumps to the next from a per-slot 16-value random table.
 
 ---
