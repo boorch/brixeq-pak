@@ -378,7 +378,7 @@ The master page shows a live gain-reduction readout and a peak-decimated mono sc
 
 ### Master copy / paste
 
-**R1 + A** copies the active scene's master FX block to a clipboard. **R1 + B** pastes it onto whichever scene cell is currently focused in the scenes strip. Lets you author one master sound and reuse it across scenes without re-authoring every parameter.
+On the master page: **R1 + A** or **L2** copies the **active scene's** master FX block. Swap to a different scene (the strip lives at the bottom so you can do it in-place), then **R1 + B** or **R2** pastes onto the now-active scene. The toast in the topbar confirms which scene received the paste. Either gesture is undo-able via L1+L2.
 
 ---
 
@@ -390,11 +390,16 @@ Modulators live alongside transpose, master FX, and pattern_idx in each scene, s
 
 ### Entering the mod view
 
-Three entry points, all equivalent:
+Two entry points, both equivalent:
 
 - **MOD icon** on the topbar (between BPM and MASTER). Hover with the cursor, press B.
-- **SELECT menu** → **modulators**.
-- **R3** stick click: toggles into and out of the mod view from anywhere.
+- **L3**: toggles into and out of the mod view from anywhere.
+
+The scenes strip lives at the bottom of the mod view too, so you can see at a glance which scene is active.
+
+### Mod copy / paste
+
+On the mod page: **R1 + A** or **L2** copies the **active scene's** 8 mod slots. Swap to a different scene (the strip lives at the bottom so you can do it in-place), then **R1 + B** or **R2** pastes onto the now-active scene. The toast in the topbar confirms which scene received the paste. Both gestures are undo-able via L1+L2.
 
 The view is a vertical list of 8 slots. Each row has a curve preview on the left and a strip of cells on the right.
 
@@ -461,7 +466,7 @@ How the 16 values get used depends on the run mode:
 - A drum track with **ONE + S&H on pitch** at a small depth gives every hit a slightly different tuning, which dodges machine-gun feel.
 - A pad with **FRE + sine on Filter Freq**, slow (1 bar+), modest depth, brings a static patch to life.
 - Two slots on the same track but at different speeds + different shapes layer into complex motion. Eight slots is a lot.
-- **R3** is the fastest way in and out. Start playing, hit R3 to tweak a modulator, R3 again to return.
+- **L3** is the fastest way in and out. Start playing, hit L3 to tweak a modulator, L3 again to return.
 
 ### Arpeggiators via pitch modulation
 
@@ -585,10 +590,10 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 | **R2** | OVERRIDE PASTE the clipboard at the cursor. Writes over populated cells; empty clipboard cells clear the target. Cursor advances past the pasted region |
 | **L1 + L2** | UNDO the last edit. Walks the snapshot ring back one step |
 | **R1 + R2** | REDO. Walks the snapshot ring forward one step |
-| **L3** (left stick click) | Toggle song mode |
-| **R3** (right stick click) | Toggle modulator screen |
+| **L3** | Toggle modulator screen |
+| **R3** | Toggle master screen |
 | **START** | Transport play / pause |
-| **SELECT** | Open menu (save, load, record, song mode, modulators, help, quit). **SELECT + START** = play from beginning |
+| **SELECT** | Open menu (new, save, load, record, song mode, help, quit). **SELECT + START** = play from beginning |
 
 ---
 
@@ -598,7 +603,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Use scenes for harmonic motion.** Same patterns, different scale or transpose strip equals a fresh-sounding section without re-authoring 5 patterns.
 - **Duplicate before you mutate.** R1+A copies a pattern or a scene; R1+B pastes it onto another slot. Spin a variation by cloning, then tweaking.
 - **A button = reset.** On any focused parameter that isn't a step (transpose offsets, BPM, scale, master cells, modulator fields), tapping A restores its default value. The fastest "undo my last few edits" gesture.
-- **Modulators are per scene.** 8 LFOs that ride along on every scene swap. R3 to open, R3 again to leave. Try ONE + S&H on pitch for per-note random offsets, or FRE + slow sine on filter freq for a moving pad.
+- **Modulators are per scene.** 8 LFOs that ride along on every scene swap. L3 to open, L3 again to leave. Try ONE + S&H on pitch for per-note random offsets, or FRE + slow sine on filter freq for a moving pad.
 - **Master sends are envelope-gated.** A snare with a short decay sends a single sharp tap into the reverb; a held pad sustains the send open. Take advantage of this: different envelope shapes give wildly different bus-FX flavours.
 - **Audition before you cut.** B-tap on the focused step plays its snapshot instantly. Pair with A (cut) and a cursor move + A (paste) to clone the exact instrument character to another step without waiting for the sequencer to come around.
 - **Trigless steps morph the held note.** A row of trigless steps with sweeping filter freqs gives you continuous filter motion without retriggering. Same trick works for FM index, VA morph, drum body, pan, sends. The amp envelope keeps playing through — no clicks.
