@@ -109,7 +109,7 @@ The transport keeps running across edits. There is no "stop to edit, play to lis
 
 The default screen. Top to bottom:
 
-- **Topbar**: project name (left), scale quantizer, BPM, and master-page icon (right). The scale and BPM cells are "editable"; the master icon opens the master FX page.
+- **Topbar**: project name (left), scale quantizer, BPM, modulator-page icon, master-page icon (right). The scale and BPM cells are editable; the mod icon opens the modulator screen, the master icon opens the master FX page.
 - **Track row**: for each of the five tracks, a track header (mute, spectrum), pattern slots (the 16-pattern bank as a vertical strip), the **step grid** (the 16-step pattern), and the **track footer** (length, direction, clock-div for the focused pattern).
 - **Left and right decks**: when a step is focused, both sides slide on screen to show parameter cells. The **left deck** carries engine-common params (pitch, logic, envelope, filter, output and sends). The **right deck** is engine-specific (different controls for VA vs FM vs the drum engines).
 - **Scenes strip**: sixteen scene cells along the bottom, just above the footer.
@@ -123,7 +123,7 @@ Pressing **X** on the step grid cycles between three column views: **steps → p
 
 - D-pad **moves the cursor**. The cursor is one-cell, it lives on a specific track and column.
 - **L1 / R1** focus the left or right deck respectively. The cursor jumps into the deck's currently-active row; releasing returns it to the step grid.
-- **Topbar** is reached by pressing **↑** while on the top step of any track; the cursor climbs out of the grid into the scale, BPM, and master cells.
+- **Topbar** is reached by pressing **↑** while on the top step of any track; the cursor climbs out of the grid into the scale, BPM, mod, and master cells (four stops, ←/→ to move between them).
 - **Scenes strip** is reached by pressing **↓** below the last step.
 - **X** cycles the column view (steps → patterns → transpose → back).
 
@@ -162,7 +162,9 @@ B-tap layers cleanly with the existing place / trigless behaviors:
 - **B-tap on a populated step**: auditions it.
 - **B-tap twice on the SAME populated step** within a short window: toggles trigless, then auditions (preview still plays even on trigless cells, since the audition path ignores the trigless flag).
 
-A trigless step holds a slot in the sequence (so the cursor can land on it) but won't fire during normal playback, useful for placeholders or rests.
+A trigless step is **a parameter lock**, not just a placeholder. When the playhead lands on a trigless cell, the step's full snapshot (filter freq/Q/env depth, FM or VA or drum body params, pan, level, delay/reverb sends) gets pushed onto the currently-sounding voice on that track without re-attacking any envelope. So you can author smooth filter sweeps, FM index morphs, drum body tilts, or volume / pan moves over the held note. The amp / FM / filter envelopes keep their existing state; only the continuously-read fields change.
+
+Pitch is intentionally left alone (since the note isn't re-triggered) and modulators with TRIG / ONCE run modes are not re-armed by a trigless step. Use trigless when you want the param changes; use a real trig when you want to retrigger.
 
 ### Editing topbar cells
 
@@ -179,7 +181,7 @@ Multi-tap behavior on Y:
 
 Pressing any bare d-pad arrow clears the selection and resumes single-cell cursor navigation.
 
-### Cut / copy / paste
+### Copy / cut / paste / undo / redo
 
 A single button, **A**, does both, deciding by context:
 
@@ -190,7 +192,19 @@ A single button, **A**, does both, deciding by context:
 
 Double-tap A on the same populated step equals cut plus paste-back, which equals **copy** (the source is restored, the clipboard stays primed for stamping elsewhere). The same idiom works on multi-cell selections.
 
+For direct copy / paste without the cut detour, use the **L2 / R2** triggers:
+
+- **L2**: COPY the focused step (or selection) into the clipboard. Source untouched. Empty cells still copy, the resulting empty clipboard turns R2 into a "wipe step" stamp.
+- **R2**: OVERRIDE PASTE. Writes the clipboard at the cursor regardless of whether the target is populated. Empty cells in a multi-cell clipboard CLEAR their target. Cursor advances past the pasted region just like A-paste does.
+
 The clipboard captures the **whole step snapshot** (engine, every param, chord, logic, the lot), so a paste recreates the source step's instrument character exactly.
+
+### Undo / redo
+
+- **L1 + L2**: undo the last edit. Walks the snapshot ring back one step. Includes step edits, cut / paste, A-reset, pattern / scene copy, modulator tweaks, BPM and scale changes.
+- **R1 + R2**: redo. Walks the ring forward.
+
+A snapshot is captured before each mutating action. The ring holds up to 50 entries. Loading a project clears the ring (the old history refers to a file that's no longer in scope). Hold the shoulder FIRST then tap the trigger to fire the chord; pressing the trigger alone falls through to copy / paste.
 
 ---
 
@@ -245,7 +259,7 @@ Six engines, selectable per-step:
 - **SD**: 808/909-style snare drum.
 - **CY**: hi-hat / cymbal. Covers both sounds via the timbre and morph controls.
 
-Drum engines **ignore transpose** and **scale quantization**. Transposing a drum note would just remap which drum sample plays, which isn't useful.
+Drum engines **ignore the per-scene transpose strip and the scale quantizer**. The drum's note value still tunes the synthesized body (so the step's pitch picks the kick / snare / hat pitch), but the scene-level transpose and scale snap pass would only push those tunings around against the user's intent. The four body params (timbre, morph, harmonics, model) carry the per-step character.
 
 ---
 
@@ -411,7 +425,7 @@ Universal (always live):
 Engine-specific (silent when the target track isn't using that engine):
 
 - **FM**: mod ratio, mod amount, mod feedback, mod attack, mod decay.
-- **VA / VA-Filt / String / Sample**: harmonics, timbre, morph, overdrive.
+- **VA**: harmonics, timbre, morph, overdrive.
 - **BD / SD / CY** (drums): timbre, morph, harmonics, model.
 - **NOIZ**: mode (continuous LFO modulation of a 5-way enum is meaningless, so noise mode is author-able but doesn't actually modulate).
 
@@ -566,9 +580,11 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 | **Y** (west face) | Selection modifier. Hold plus d-pad to drag a selection rectangle |
 | **X** (north face) | Column view cycle on the grid (steps → patterns → transpose). Works from any cursor region |
 | **L1** | Focus left deck |
-| **L2** | Reserved |
+| **L2** | COPY focused step or selection into the clipboard (source untouched). Empty cells still copy, useful as a "wipe stamp" for R2 |
 | **R1** | Focus right deck. Also clipboard modifier: **R1 + A** copies, **R1 + B** pastes (works for patterns, scenes, and master FX) |
-| **R2** | Reserved |
+| **R2** | OVERRIDE PASTE the clipboard at the cursor. Writes over populated cells; empty clipboard cells clear the target. Cursor advances past the pasted region |
+| **L1 + L2** | UNDO the last edit. Walks the snapshot ring back one step |
+| **R1 + R2** | REDO. Walks the snapshot ring forward one step |
 | **L3** (left stick click) | Toggle song mode |
 | **R3** (right stick click) | Toggle modulator screen |
 | **START** | Transport play / pause |
@@ -585,6 +601,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Modulators are per scene.** 8 LFOs that ride along on every scene swap. R3 to open, R3 again to leave. Try ONE + S&H on pitch for per-note random offsets, or FRE + slow sine on filter freq for a moving pad.
 - **Master sends are envelope-gated.** A snare with a short decay sends a single sharp tap into the reverb; a held pad sustains the send open. Take advantage of this: different envelope shapes give wildly different bus-FX flavours.
 - **Audition before you cut.** B-tap on the focused step plays its snapshot instantly. Pair with A (cut) and a cursor move + A (paste) to clone the exact instrument character to another step without waiting for the sequencer to come around.
+- **Trigless steps morph the held note.** A row of trigless steps with sweeping filter freqs gives you continuous filter motion without retriggering. Same trick works for FM index, VA morph, drum body, pan, sends. The amp envelope keeps playing through — no clicks.
 - **Double-tap A to copy.** Cut plus immediate paste-back equals source restored plus clipboard primed. Faster than a dedicated copy gesture.
 - **Recording survives song mode.** You can arm REC before entering song mode and the entire song will be captured front to back.
 - **Auto-load on boot picks up where you left off.** No need to hunt for the last project in the load list.
@@ -610,7 +627,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Scene**: a snapshot of {one pattern per track, scale, transpose, master FX, modulators}. A project has 16.
 - **Song**: a linear list of scene references (and overrides), up to 64 rows long.
 - **Engine**: the synthesis algorithm for a step. Six available: VA, FM, NOIZ, BD, SD, CY.
-- **Trigless**: a step that holds its slot in the grid but doesn't fire.
+- **Trigless**: a step that does NOT retrigger. Instead, when the playhead lands on it, its full params lock onto the currently-sounding voice on that track (filter, FM/VA/drum body, pan, level, sends). Envelopes keep their state; LFOs in TRIG/ONCE mode are not re-armed.
 - **Chord stack**: root pitch plus up to 4 semitone offsets played together by the step.
 - **Bar**: 16 master 16th-notes. The unit scene queues and song-row durations work in.
 - **Master 16th**: one tick of the master clock, regardless of any track's clock divider.
