@@ -209,6 +209,41 @@ For direct copy / paste without the cut detour, use the **L2 / R2** triggers:
 
 The clipboard captures the **whole step snapshot** (engine, every param, chord, logic, the lot), so a paste recreates the source step's instrument character exactly.
 
+### Randomize selection
+
+With a multi-cell step-grid selection alive, **L1 + R1 + face button** randomizes the selected cells in place. Each press wipes the selection first and fills it with a fresh pattern. Four escalating levels mapped to the four face buttons:
+
+- **L1 + R1 + Y** (west): level 1, density only.
+- **L1 + R1 + X** (north): level 2, density + pitch (scale-quantized).
+- **L1 + R1 + A** (east): level 3, density + pitch + engine (with a subtle right-deck variation).
+- **L1 + R1 + B** (south): level 4, density + pitch + engine + full per-engine left-deck and right-deck randomization.
+
+While both shoulders are held with a valid selection (≥ 2 cells on the step grid), the visor returns to the selection and the footer reads `RANDOMIZE?`. Pressing a face button in this "armed" state fires the randomize at that level instead of the button's normal action (paste / copy / view-cycle / selection-start). Releasing either shoulder reverts to the normal single-deck focus.
+
+**Base step**. The clipboard provides the seed: if you've L2-copied a single step, that step's full snapshot (engine, every param, chord, all of it) is what level 1 stamps and what levels 2/3/4 mutate from. With an empty clipboard, the seed is the default step (VA, C4, factory defaults).
+
+**Density cycling**. Consecutive presses of the SAME level button against the SAME selection walk the fill count:
+
+- Press 1: 25 % of the selection length.
+- Press 2: 50 %.
+- Press 3: 75 %.
+- Press 4: 100 %.
+- Press 5+: random count, brackets vary with selection size (small selections may fill 1..N, larger ones at least 2 or 3).
+
+Changing the selection (re-anchoring, resizing) or pressing a different level button resets the cycle to press 1. Switching between L1 / L2 / L3 / L4 lets you try out complexity without carrying density progress along.
+
+**Per-track behaviour**. If the selection spans multiple tracks, each track is randomized independently. Drum-pool selections respect drum convention: BD always lands on the selection's first step, SD is weighted toward steps 4 and 12, and only canonical kick / snare positions are populated.
+
+**Engine pools** (levels 3+). The clipboard engine picks the pool:
+
+- VA or FM clipboard → mixed VA / FM steps.
+- NOIZ or CY clipboard → mostly CY with occasional NOIZ (~ 8 %).
+- BD or SD clipboard → mixed BD / SD honouring drum positional rules.
+
+**Microtime clash protection** (level 4). Adjacent ± 50 % microtime values never collide. If two consecutive filled steps would land at the same moment (a +50 % followed by a -50 %, or vice versa), the second is auto-demoted to 0. Also checked against the steps immediately outside the selection on the same track.
+
+**Undo**. Each press is one undo entry. L1 + L2 reverses the whole operation in one shot, regardless of how many cells changed.
+
 ### Undo / redo
 
 - **L1 + L2**: undo the last edit. Walks the snapshot ring back one step. Includes step edits, cut / paste, A-reset, pattern / scene copy, modulator tweaks, BPM, scale, and shuffle changes.
@@ -618,6 +653,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 | **R2** | OVERRIDE PASTE the clipboard at the cursor. Writes over populated cells; empty clipboard cells clear the target. Cursor advances past the pasted region |
 | **L1 + L2** | UNDO the last edit. Walks the snapshot ring back one step |
 | **R1 + R2** | REDO. Walks the snapshot ring forward one step |
+| **L1 + R1 + Y / X / A / B** | RANDOMIZE the current step-grid selection at level 1 / 2 / 3 / 4. Footer reads `RANDOMIZE?` while both shoulders are held with a valid selection |
 | **L3** | Toggle modulator screen |
 | **R3** | Toggle master screen |
 | **START** | Transport play / pause |
@@ -638,6 +674,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Double-tap A to copy.** Cut plus immediate paste-back equals source restored plus clipboard primed. Faster than a dedicated copy gesture.
 - **Recording survives song mode.** You can arm REC before entering song mode and the entire song will be captured front to back.
 - **Auto-load on boot picks up where you left off.** No need to hunt for the last project in the load list.
+- **Randomize ladders well from sparse to dense.** Hold L1 + R1 on a selection, then tap W → W → W to fill 25 / 50 / 75 % of the cells with your last-copied step before any pitch / engine randomness kicks in. Switch to N / A / B when you want to layer extra mutation on top, the density cycle restarts each time you change level.
 
 ---
 
@@ -666,6 +703,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Master 16th**: one tick of the master clock, regardless of any track's clock divider.
 - **Live launch**: a pattern swap on a single track, queued at the next bar.
 - **Modulator**: a small per-scene LFO that nudges a chosen parameter on a chosen track over time. 8 slots per scene.
+- **Randomize**: L1 + R1 + face button on a multi-cell step-grid selection. Four escalating levels (west=density, north=+pitch, east=+engine, south=+full per-engine params). Consecutive same-level presses cycle the fill density 25/50/75/100 then size-bracketed random.
 - **Run mode** (modulator): FRE = continuous; TRG = phase resets on each note; ONE = one cycle per note, then freezes.
 - **S&H** (sample & hold): a waveform that holds a value for the cycle, then jumps to the next from a per-slot 16-value random table.
 
