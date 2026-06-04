@@ -109,7 +109,7 @@ The transport keeps running across edits. There is no "stop to edit, play to lis
 
 The default screen. Top to bottom:
 
-- **Topbar**: project name (left), scale quantizer, BPM, modulator-page icon, master-page icon (right). The scale and BPM cells are editable; the mod icon opens the modulator screen, the master icon opens the master FX page.
+- **Topbar**: project name (left), scale quantizer, BPM, shuffle, modulator-page icon, master-page icon (right). The scale, BPM, and shuffle cells are editable; the mod icon opens the modulator screen, the master icon opens the master FX page.
 - **Track row**: for each of the five tracks, a track header (mute, spectrum), pattern slots (the 16-pattern bank as a vertical strip), the **step grid** (the 16-step pattern), and the **track footer** (length, direction, clock-div for the focused pattern).
 - **Left and right decks**: when a step is focused, both sides slide on screen to show parameter cells. The **left deck** carries engine-common params (pitch, logic, envelope, filter, output and sends). The **right deck** is engine-specific (different controls for VA vs FM vs the drum engines).
 - **Scenes strip**: sixteen scene cells along the bottom, just above the footer.
@@ -123,7 +123,7 @@ Pressing **X** on the step grid cycles between three column views: **steps → p
 
 - D-pad **moves the cursor**. The cursor is one-cell, it lives on a specific track and column.
 - **L1 / R1** focus the left or right deck respectively. The cursor jumps into the deck's currently-active row; releasing returns it to the step grid.
-- **Topbar** is reached by pressing **↑** while on the top step of any track; the cursor climbs out of the grid into the scale, BPM, mod, and master cells (four stops, ←/→ to move between them).
+- **Topbar** is reached by pressing **↑** while on the top step of any track; the cursor climbs out of the grid into the scale, BPM, shuffle, mod, and master cells (five stops, ←/→ to move between them).
 - **Scenes strip** is reached by pressing **↓** below the last step.
 - **X** cycles the column view (steps → patterns → transpose → back).
 
@@ -168,7 +168,17 @@ Pitch is intentionally left alone (since the note isn't re-triggered) and modula
 
 ### Editing topbar cells
 
-You can edit the **scale** and **BPM** cells in the topbar the same way as a step: navigate the cursor up into the topbar, focus the cell, then B + d-pad.
+You can edit the **scale**, **BPM**, and **shuffle** cells in the topbar the same way as a step: navigate the cursor up into the topbar, focus the cell, then B + d-pad.
+
+### Shuffle
+
+A project-wide swing percentage in the topbar (reads `≈50%` next to the BPM). Range 50% (straight, no swing) to 65% (heavy MPC-style swing). Every odd-indexed step (the 2nd, 4th, 6th, ... in 1-indexed counting, the "off-beats" of each pair) has its grid window delayed; even-indexed steps stay on grid. At 50% the pattern plays straight; at 65% the off-beats land roughly 30% later than nominal.
+
+- **B + ←/→** edits by ±1%.
+- **B + ↑/↓** edits by ±5%.
+- **A** on the shuffle cell resets to 50% (straight).
+
+Shuffle moves the **grid**. Microtiming (per-step nudge, see §7) is applied on top of the shuffled grid: a swung off-beat with a `+33%` microtime ends up even later, not relative to the unshuffled position.
 
 ### Selection
 
@@ -201,7 +211,7 @@ The clipboard captures the **whole step snapshot** (engine, every param, chord, 
 
 ### Undo / redo
 
-- **L1 + L2**: undo the last edit. Walks the snapshot ring back one step. Includes step edits, cut / paste, A-reset, pattern / scene copy, modulator tweaks, BPM and scale changes.
+- **L1 + L2**: undo the last edit. Walks the snapshot ring back one step. Includes step edits, cut / paste, A-reset, pattern / scene copy, modulator tweaks, BPM, scale, and shuffle changes.
 - **R1 + R2**: redo. Walks the ring forward.
 
 A snapshot is captured before each mutating action. The ring holds up to 50 entries. Loading a project clears the ring (the old history refers to a file that's no longer in scope). Hold the shoulder FIRST then tap the trigger to fire the chord; pressing the trigger alone falls through to copy / paste.
@@ -226,7 +236,7 @@ The active parameter persists across step navigation, so you can scrub left / ri
 Rows top to bottom, each containing one or more sibling parameters:
 
 - **PITCH**: note, chord stack, slide, pitch-sweep range and duration.
-- **RULE**: logic (trigger conditions, e.g. every nth bar, alternating) and probability (1/4, 1/2, 3/4, 1/1).
+- **RULE**: logic (trigger conditions, e.g. every nth bar, alternating), probability (1/4, 1/2, 3/4, 1/1), and microtime (per-step ±50% nudge off the grid).
 - **AMP ENV**: attack, hold, decay (an AHD envelope, no separate sustain).
 - **FILTER**: bipolar DJ-style sweep (HP below center, LP above), Q, plus filter envelope attack, decay, depth.
 - **OUT**: level, pan, send-delay, send-reverb (per-step amounts into the master bus FX).
@@ -245,6 +255,24 @@ The right deck swaps wholesale when the step's engine changes. Each row holds ex
 A step can play up to **five voices simultaneously**: one root note (the step's pitch) plus four semitone offsets. Offset 0 equals an unused slot, so the count is effectively variable. Voices share the step's engine and envelope; transpose and scale-quantize apply to the whole stack.
 
 This is the chord model: dial in `+0 +4 +7 +12` and the step plays a major triad with octave. Polyphony is **intra-track only**, a fresh trigger on the same track cuts off the previous voices on that track.
+
+### Microtime
+
+Per-step nudge of the audible fire moment off the grid, edited from the **microtime** cell in the RULE row of the left deck. Seven discrete values render as 4-char labels on the cell:
+
+`▲50%` — `▲33%` — `▲16%` — `----` (on grid) — `▼16%` — `▼33%` — `▼50%`
+
+The ▲ glyph means **earlier** in time (above the playhead in the tracker's downward flow); ▼ means **later**. The size is in percent of nominal step duration, so it tracks both BPM and the pattern's clock divider automatically.
+
+- **B + ↑/←** moves toward ▲ (earlier).
+- **B + ↓/→** moves toward ▼ (later).
+- **A** on a step with microtime resets the cell to `----`.
+
+The visual playhead **always tracks the nominal grid** position regardless of microtime; only the audible event shifts. So a `▲50%` step still highlights at its grid position; the sound just arrives half a step early. Useful for groove humanization, hi-hat tightening, off-beat ghost notes.
+
+Microtime composes with **shuffle** (see §6): shuffle moves the grid (delays every odd-indexed step's grid for swing), then microtime moves the fire relative to that shuffled grid. They stack additively.
+
+Adjacent `±50%` steps (e.g. a `+50%` step right before a `-50%` step) fire at the same moment; both audibly trigger (the engine is intra-track polyphonic, so chord steps and overlapping voices are fine).
 
 ---
 
@@ -563,7 +591,7 @@ Projects are saved as `.brixeq` files in `/mnt/SDCARD/BRIXEQ/PROJECTS/` on the S
 
 SELECT menu, then **save**, then enter a name in the slot-cycling keyboard (12 char max, A-Z 0-9 - _).
 
-A save captures **everything**: every step on every pattern on every track, every scene, the song, master FX per scene, the active scene, BPM. Audio recordings are kept separately in `/mnt/SDCARD/BRIXEQ/RECORDINGS/` and are not bundled inside project saves.
+A save captures **everything**: every step on every pattern on every track (including microtime), every scene, the song, master FX per scene, the active scene, BPM, shuffle. Audio recordings are kept separately in `/mnt/SDCARD/BRIXEQ/RECORDINGS/` and are not bundled inside project saves.
 
 ### Load
 
@@ -581,7 +609,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 |--------|--------|
 | D-pad | Cursor navigation |
 | **B** (south face) | Edit modifier. Hold plus d-pad to change the focused cell's value; tap alone to toggle trigless on a populated step |
-| **A** (east face) | On a populated step: cut. On any other focused parameter (transpose cells, footer slots, BPM, scale, master FX, modulator fields): reset to default. Menu confirm in popups |
+| **A** (east face) | On a populated step: cut. On any other focused parameter (transpose cells, footer slots, BPM, scale, shuffle, master FX, modulator fields): reset to default. Menu confirm in popups |
 | **Y** (west face) | Selection modifier. Hold plus d-pad to drag a selection rectangle |
 | **X** (north face) | Column view cycle on the grid (steps → patterns → transpose). Works from any cursor region |
 | **L1** | Focus left deck |
@@ -602,7 +630,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Pattern launches beat scene queues for live performance.** Scene queues replace everything (all five patterns plus scale plus transpose plus master FX). Pattern launches swap a single track's pattern. The latter is more granular and lets you build organic transitions.
 - **Use scenes for harmonic motion.** Same patterns, different scale or transpose strip equals a fresh-sounding section without re-authoring 5 patterns.
 - **Duplicate before you mutate.** R1+A copies a pattern or a scene; R1+B pastes it onto another slot. Spin a variation by cloning, then tweaking.
-- **A button = reset.** On any focused parameter that isn't a step (transpose offsets, BPM, scale, master cells, modulator fields), tapping A restores its default value. The fastest "undo my last few edits" gesture.
+- **A button = reset.** On any focused parameter that isn't a step (transpose offsets, BPM, scale, shuffle, master cells, modulator fields), tapping A restores its default value. The fastest "undo my last few edits" gesture.
 - **Modulators are per scene.** 8 LFOs that ride along on every scene swap. L3 to open, L3 again to leave. Try ONE + S&H on pitch for per-note random offsets, or FRE + slow sine on filter freq for a moving pad.
 - **Master sends are envelope-gated.** A snare with a short decay sends a single sharp tap into the reverb; a held pad sustains the send open. Take advantage of this: different envelope shapes give wildly different bus-FX flavours.
 - **Audition before you cut.** B-tap on the focused step plays its snapshot instantly. Pair with A (cut) and a cursor move + A (paste) to clone the exact instrument character to another step without waiting for the sequencer to come around.
