@@ -46,6 +46,7 @@ PROJECT
 │     │
 │     └── each scene stores ONLY:
 │            • which pattern is active per track  (5 numbers 0..F)
+│            • which tracks are muted  (per-scene mute)
 │            • scale  (root + mask)
 │            • a transpose strip per track  (5 strips)
 │            • master FX state  (delay, reverb, compressor)
@@ -55,7 +56,7 @@ PROJECT
 │            of the patterns I already have, with a different scale /
 │            transpose / FX recall".
 │
-└── SONG  (up to 64 rows)
+└── SONG  (up to 128 rows)
       │
       └── each row references a scene (or none) + a duration in bars.
           fires its scene at the start of its window.
@@ -64,7 +65,7 @@ PROJECT
 ### Why this matters
 
 - **Pattern data is shared.** Editing T1's pattern 3 affects every scene that has T1 pointing to pattern 3. So if two scenes share the same drum loop on T1, you only author it once. If you wanted them to differ, you'd point one scene at T1 pattern 3 and another at T1 pattern 4, then author each.
-- **Scale, transpose, and master FX are per-scene.** Editing scene 0's transpose only affects scene 0; scene 1's transpose is untouched.
+- **Mute, scale, transpose, and master FX are per-scene.** Muting a track or editing scene 0's transpose only affects scene 0; scene 1 is untouched.
 - **Scenes are essentially viewing angles on the same set of tracks.** A verse and chorus can use the exact same patterns but with different transposes and FX. Or they can use entirely different patterns. Both work.
 
 ### What a scene stores, visually
@@ -73,6 +74,8 @@ PROJECT
 SCENE 2
 ┌──────────────────────────────────────────────────┐
 │  pattern_idx:   T1=4  T2=7  T3=1  T4=0  T5=3     │   ← five pointers
+│                                                  │
+│  muted:         T4                               │   ← per-scene mute
 │                                                  │
 │  scale:         root=G,  mask=mixolydian         │
 │                                                  │
@@ -391,13 +394,18 @@ Transpose is per-track, so different tracks can move through different harmonic 
 Sixteen scenes per project. Each scene snapshot stores:
 
 - The **pattern index per track** (which pattern in each track's bank is active).
+- The **per-track mute** (which tracks are silenced).
 - The **scale**.
 - The **per-track transpose sequencer**.
 - The **master bus FX state** (delay, reverb, compressor settings).
 
+### Per-scene mute
+
+Track mute is **per-scene**: muting a track (B-tap its header in the main editor) silences it in the **current scene only**, and the mute is recalled when you switch scenes, just like scale, transpose, and FX. So one scene can drop the bass while another keeps it, without re-authoring anything. Song mode can override a scene's mute per row (see §14). Muting is saved with the scene.
+
 ### Switching scenes
 
-The scenes strip lives along the bottom. **B-tap** on any scene cell **queues that scene**; it fires at the next bar boundary, swapping all five tracks' patterns plus scale plus transpose plus master FX simultaneously, while keeping the master clock running.
+The scenes strip lives along the bottom. **B-tap** on any scene cell **queues that scene**; it fires at the next bar boundary, swapping all five tracks' patterns plus mute plus scale plus transpose plus master FX simultaneously, while keeping the master clock running.
 
 Queued scenes pulse on the strip. Pressing B again on the same cell un-queues. Pressing B on a different cell replaces the queue.
 
@@ -560,7 +568,7 @@ Combine with a TRG run mode so the arp restarts on each note, or FRE so the same
 
 ## 14. Song mode
 
-A standalone linear scene sequencer. Up to 64 rows of `[SCN | BARS | T1 T2 T3 T4 T5]`.
+A standalone linear scene sequencer. Up to 128 rows of `[SCN | BARS | T1 T2 T3 T4 T5 | TAG]`.
 
 ### Entering and exiting
 
@@ -580,18 +588,32 @@ Song mode is **exclusive**. While engaged, scene queueing and pattern launches a
 ```
 
 - **SCN**: which scene this row references. Three states:
-  - `N`: references scene N, with patterns matching scene N's defaults.
-  - `N?`: references scene N, but at least one track's pattern has been overridden.
+  - `N`: references scene N, with patterns and mutes matching scene N's defaults.
+  - `N*`: references scene N, but at least one track's pattern **or mute** has been overridden for this row.
   - `?`: no scene reference. Patterns are authored directly; scale, transpose, and master inherit from the previously-fired scene in this song run.
 - **BARS**: how long this row plays, `1x` to `99x` bars. `-` equals an empty row, which marks the end of the song.
-- **T1..T5**: per-track pattern overrides. When you pick a scene in SCN, these auto-fill from that scene's patterns. Editing any T cell flips SCN to `N?`.
+- **T1..T5**: per-track pattern overrides. When you pick a scene in SCN, these auto-fill from that scene's patterns (and mutes). Editing any T cell, or muting a track (see below), flips SCN to `N*`.
 
-A row is essentially "play this scene for N bars, with optional per-track pattern overrides." The overrides exist so you can branch from a scene without authoring a whole new one. For example, take scene 2 but use T3's pattern 5 instead of its default pattern 1 for this row only.
+A row is essentially "play this scene for N bars, with optional per-track pattern and mute overrides." The overrides exist so you can branch from a scene without authoring a whole new one. For example, take scene 2 but use T3's pattern 5 instead of its default pattern 1 for this row only, or drop T4 out entirely for a breakdown.
+
+### Per-row track mute
+
+Press **X** (north) on a T cell to **mute that track for this row** (press again to unmute). A muted track keeps its pattern visible but renders the glyph **dimmed**, and the mute counts as an override (SCN shows `N*`). This is the song-mode equivalent of muting a track on an Elektron: silence a layer for specific rows without touching the underlying pattern. A muted track fires nothing for the row's duration; any voice still ringing from the previous row decays naturally.
+
+### TAG column
+
+The far-right **TAG** column is an optional label per row, purely a visual reminder (INTRO, CHORUS, DROP, a mood, a workflow note, …). It has no effect on playback, scenes, or the `N*` marker. Most rows won't have one; add them only where they help you navigate a long song.
+
+- **B + d-pad** on the TAG cell cycles inline through the whole tag list (`-` → first → … → last → `-`).
+- **B-tap** (press and release, no d-pad) on the TAG cell opens a **fullscreen tag palette**: every tag grouped by category (sections, energy, mood, texture, feel, workflow, and an A1-F5 marker grid) in a 5-wide grid. D-pad moves the cursor, **B** picks (and returns), **A** or **SELECT** cancels. The `-` cell at the top clears the tag.
+
+Tags are saved with the song as plain text, so the tag list can be reordered or renamed in a future version without breaking your saved songs.
 
 ### Editing
 
 - **D-pad** moves the cursor between cells.
 - **B + d-pad** edits the focused cell. On SCN and T cells, ±1 cycles values (any direction). On BARS, ↑/↓ equal ±10 bars (coarse), ←/→ equal ±1 bar (fine).
+- **X** on a T cell toggles that track's mute for the row.
 - **Y + d-pad** drags a row selection (vertical only; song rows are atomic).
 - **A** cuts and pastes whole rows, same rules as the step grid.
 - **SELECT** re-opens the menu.
@@ -706,7 +728,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Pattern**: a 16-step sequence belonging to a track. Each track has 16 patterns.
 - **Step**: one cell in a pattern. Carries a complete instrument snapshot.
 - **Scene**: a snapshot of {one pattern per track, scale, transpose, master FX, modulators}. A project has 16.
-- **Song**: a linear list of scene references (and overrides), up to 64 rows long.
+- **Song**: a linear list of scene references (and overrides), up to 128 rows long.
 - **Engine**: the synthesis algorithm for a step. Six available: VA, FM, NOIZ, BD, SD, CY.
 - **Trigless**: a step that does NOT retrigger. Instead, when the playhead lands on it, its full params lock onto the currently-sounding voice on that track (filter, FM/VA/drum body, pan, level, sends). Envelopes keep their state; LFOs in TRIG/ONCE mode are not re-armed.
 - **Chord stack**: root pitch plus up to 4 semitone offsets played together by the step.
