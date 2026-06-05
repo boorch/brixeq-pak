@@ -144,7 +144,7 @@ The fundamental editing chord is **B held plus d-pad**, always with the cursor o
 
 When you first land in the editor, the active parameter is **note**, so the gesture below means "edit pitch". To edit a different parameter (level, filter freq, harmonics, etc.), hold **L1** or **R1** to enter the deck and pick the parameter cell (see §7). When you release L1/R1, the cursor returns to the step grid but the parameter you picked stays selected. B + d-pad on a step now edits that parameter's value at that step.
 
-- **B + ↓** on an empty step: place a note at the focused cell, using the previously-edited pitch (or middle C the first time).
+- **B + ↓** on an empty step: place a fresh step at the focused cell. A fresh step is always a clean default, C4 (middle C) on the VA engine with factory settings, regardless of what you last edited or have in the clipboard.
 - **B + ↑/↓** on a placed step: coarse change (e.g. ±12 semitones on pitch).
 - **B + ←/→** on a placed step: fine change (e.g. ±1 semitone on pitch).
 
@@ -158,7 +158,7 @@ This is the fastest way to decide what to cut, copy, or paste. The whole BRIXEQ 
 
 B-tap layers cleanly with the existing place / trigless behaviors:
 
-- **B-tap on an empty step**: places a note at the previously-edited pitch, then auditions the just-placed note.
+- **B-tap on an empty step**: places a fresh default step (C4, VA, factory settings), then auditions the just-placed note.
 - **B-tap on a populated step**: auditions it.
 - **B-tap twice on the SAME populated step** within a short window: toggles trigless, then auditions (preview still plays even on trigless cells, since the audition path ignores the trigless flag).
 
