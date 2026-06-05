@@ -218,22 +218,20 @@ With a multi-cell step-grid selection alive, **L1 + R1 + face button** randomize
 
 - **L1 + R1 + B** (south): level 1, density stamp from clipboard only. No mutation.
 - **L1 + R1 + Y** (west): level 2, mutate the currently-focused step parameter on populated steps in place. Empty cells stay empty.
-- **L1 + R1 + X** (north): level 3, density + pitch (scale-quantized) + engine (subtle right-deck variation).
-- **L1 + R1 + A** (east): level 4, density + pitch + engine + full per-engine left-deck and right-deck randomization.
+- **L1 + R1 + X** (north): level 3, drift pitch + engine + a subtle right-deck nudge on existing steps in place.
+- **L1 + R1 + A** (east): level 4, level 3 plus filter, amp envelope, chord, slide, and microtime drift. Still in place.
 
 While both shoulders are held with a valid selection (≥ 2 cells on the step grid), the visor returns to the selection and the footer reads `RANDOMIZE?`. Pressing a face button in this "armed" state fires the randomize at that level instead of the button's normal action (paste / copy / view-cycle / selection-start). Releasing either shoulder reverts to the normal single-deck focus.
 
-**Base step**. The clipboard provides the seed: if you've L2-copied a single step, that step's full snapshot (engine, every param, chord, all of it) is what level 1 stamps and what level 3 / 4 mutate from, and is also the anchor that level 2 perturbs around. With an empty clipboard, the seed is the default step (VA, C4, factory defaults).
+**Only level 1 creates or deletes steps.** Each L1 press wipes the selection and refills it from the clipboard at the density cycle. Levels 2, 3 and 4 are strictly in-place: they touch only steps that are already active (or trigless), leave empty cells alone, and never add or remove anything. Your step distribution is sacred above level 1.
 
-**Levels 1, 3, 4 wipe-and-fill**. Each press of L1 / L3 / L4 first wipes every cell in the selection, then refills according to the density cycle. **Level 2 is in-place**: it touches only steps that are already active (or trigless), leaves empty cells alone, and never creates new steps. Level 2's "what gets randomized" is determined by the currently-focused parameter on the decks (the same icon B + d-pad would edit): pitch, engine, filter cutoff, FM amount, drum timbre, chord, etc.
+**Anchors.** Level 1 stamps the clipboard step; level 2 perturbs around the clipboard's values (empty clipboard → default step: VA, C4, factory defaults). Levels 3 and 4 ignore the clipboard entirely: they drift each step's **own current values**, a random walk. Repeated presses accumulate; one press is one undo entry, so L1 + L2 walks back a whole pass.
 
-**Density cycling** (levels 1, 3, 4). Consecutive presses of the SAME level button against the SAME selection walk the fill count, wrapping 1 → 2 → 3 → 4 → 1:
+**The 4-press cycle.** Consecutive presses of the SAME level button against the SAME selection escalate, wrapping 1 → 2 → 3 → 4 → 1:
 
-- Press 1: 25 % of the selection length.
-- Press 2: 50 %.
-- Press 3: 75 %.
-- Press 4: 100 %.
-- Press 5: back to 25 %, etc.
+- **Level 1**: fill density, 25 / 50 / 75 / 100 % of the selection length.
+- **Levels 3, 4 coverage**: 25 / 50 / 75 / 100 % of the *populated* steps get touched (minimum one).
+- **Levels 3, 4 intensity**: the same press also scales every drift magnitude below, so press 1 is a gentle nudge on a few steps and press 4 is a big swing on all of them.
 
 **Level 2 range cycling**. Consecutive same-(level, active param) presses widen the ±N window around the clipboard's value at that field, wrapping 1 → 2 → 3 → 4 → 1. The window is calibrated for a full 0-FF byte (cycle 1 = ±5, cycle 2 = ±10, cycle 3 = ±30, cycle 4 = ±60) and **rescaled to the field's own range** for narrower params, so a small field like `probability` (0-3) or `noise mode` (0-4) still gets a real ladder instead of saturating on every cycle (cycle 4 reaches roughly the full span; lower cycles ladder up to it). The result is clamped to the field's legal range. Special cases:
 
@@ -246,15 +244,13 @@ While both shoulders are held with a valid selection (≥ 2 cells on the step gr
 
 Changing the selection (re-anchoring, resizing), pressing a different level button, or — at level 2 — switching the active param, resets the cycle to press 1.
 
-**Per-track behaviour** (levels 1, 3, 4). If the selection spans multiple tracks, each track is randomized independently. Drum-pool selections at L3 / L4 respect drum convention: BD always lands on the selection's first step, SD is weighted toward steps 4 and 12, and only canonical kick / snare positions are populated.
+**Level 3 drift.** Per touched step: 50 % chance the note stays, otherwise it drifts ±3 / 5 / 8 / 12 semitones (by cycle), scale-snapped on VA / FM. The engine re-rolls with 25 / 50 / 75 / 100 % chance **within the step's own family** (VA ⇄ FM, NOIZ ⇄ CY, BD ⇄ SD), and the right deck is *not* reset on a swap: every step stores all engine families, so the swap just reveals the step's dormant values for the new engine. Right-deck params then drift ±2.5…10 % of their range around their own values.
 
-**Engine pools** (levels 3, 4). The clipboard engine picks the pool:
+**Level 4 drift.** Everything level 3 does, with the right-deck drift widened to ±10…50 %. Melodic steps additionally drift filter freq / Q / env decay / env depth and amp attack / decay (±5…30 %), may roll a fresh chord (15…60 % chance; the pool widens with the cycle exactly like level 2's chord mode, and a failed roll keeps the existing chord), and may flip slide on/off (10…25 %). All engines walk microtime along the 7 legal detents (same model as level 2's microtime mode). NOIZ steps also walk their noise mode.
 
-- VA or FM clipboard → mixed VA / FM steps.
-- NOIZ or CY clipboard → mostly CY with occasional NOIZ (~ 8 %).
-- BD or SD clipboard → mixed BD / SD honouring drum positional rules.
+**Per-track behaviour.** If the selection spans multiple tracks, each track is randomized independently, and each step drifts within its own engine family, so melodic and drum material never bleed into each other.
 
-**Microtime clash protection** (level 4). Adjacent ± 50 % microtime values never collide. If two consecutive filled steps would land at the same moment (a +50 % followed by a -50 %, or vice versa), the second is auto-demoted to 0. Also checked against the steps immediately outside the selection on the same track.
+**Microtime clash protection** (level 4). Adjacent ± 50 % microtime values never collide. If a drifted step would land at the same moment as a neighbour (a +50 % followed by a -50 %, or vice versa), the *drifted* step demotes to 0; pre-existing steps are never altered. Also checked against the steps immediately outside the selection on the same track.
 
 **Undo**. Each press is one undo entry. L1 + L2 reverses the whole operation in one shot, regardless of how many cells changed.
 
@@ -505,9 +501,11 @@ The view is a vertical list of 8 slots. Each row has a curve preview on the left
 
 The **D** cycle includes both **universal** params (work on every engine) and **engine-specific** params (only take effect when the target track is playing a step on that engine).
 
-Universal (always live):
+Universal (always live), listed in the D cell's cycle order, which follows the left deck top to bottom:
 
-- Pitch, Volume, Pan, Filter Freq, Filter Q, Filter Env Depth, Delay Send, Reverb Send.
+- Pitch, Amp Attack, Amp Hold, Amp Decay, Filter Freq, Filter Q, Filter Env Attack, Filter Env Decay, Filter Env Depth, Volume, Pan, Delay Send, Reverb Send.
+
+After the universals the cycle walks the engines in deck order, VA → FM → NOIZ → BD → SD → CY, each engine's params in its own right-deck order.
 
 Engine-specific (silent when the target track isn't using that engine):
 
@@ -519,6 +517,21 @@ Engine-specific (silent when the target track isn't using that engine):
 Pick any destination freely. If the engine on the target track at fire-time doesn't own that parameter, the slot just doesn't contribute (no error, no noise, no surprise). As soon as a step on that engine fires, the modulation kicks in.
 
 **Pitch modulation respects the active scale.** When a slot targets Pitch, the modulator's bipolar offset is added to the note before the scale's snap pass runs. So on a C major scene, even a +6 semitone modulator nudge lands on a major-scale note (here F or G), not on the F♯ in between. Set the scale to chromatic in the topbar if you want the raw shift through.
+
+### Continuous vs fire-sampled destinations
+
+Almost every destination modulates **continuously**: the LFO keeps moving the parameter on the sounding voice for as long as it rings, including the decay tail after the gate ends. A slow sine on Filter Freq is a true sweep, a square on Volume is a tremolo gate, FM mod ratio glides smoothly through non-integer ratios (metallic, inharmonic, very FM).
+
+The exceptions sample the LFO **once, at the moment the step fires**, and then hold:
+
+- **Pitch**: a voice's pitch is set at note-on (it integrates with transpose and the scale snap). Use slide or pitch sweep for movement within a note.
+- **Amp Attack / Hold / Decay**, **Filter Env Attack / Decay** and **FM mod attack / mod decay**: envelope times. Changing an envelope's length mid-flight would jump its rate, so each note locks them at fire time. Per-note variation is the point: ONE + S&H on Amp Decay gives every hit a different length.
+- **Filter env depth**: the filter envelope belongs to the note it was struck with; the LFO varies it per note, not within one.
+- **NOIZ mode**: a 5-way enum; sweeping it continuously is meaningless, so it doesn't modulate at all.
+
+A voice never re-reads envelope times mid-note, envelopes always complete the shape they started with.
+
+Trigless steps re-anchor the sounding voice to the trigless step's values; the modulation then continues from that new anchor. Each voice modulates around **its own** step's values, so a new step never drags the previous step's still-ringing tail along with it.
 
 ### Run modes in detail
 
@@ -686,7 +699,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 | **R2** | OVERRIDE PASTE the clipboard at the cursor. Writes over populated cells; empty clipboard cells clear the target. Cursor advances past the pasted region |
 | **L1 + L2** | UNDO the last edit. Walks the snapshot ring back one step |
 | **R1 + R2** | REDO. Walks the snapshot ring forward one step |
-| **L1 + R1 + B / Y / X / A** | RANDOMIZE the current step-grid selection. B = L1 density stamp, Y = L2 in-place mutation of the focused param on populated steps, X = L3 density+pitch+engine, A = L4 full per-engine. Footer reads `RANDOMIZE?` while both shoulders are held with a valid selection |
+| **L1 + R1 + B / Y / X / A** | RANDOMIZE the current step-grid selection. B = L1 density stamp, Y = L2 in-place mutation of the focused param, X = L3 in-place drift (pitch / engine / right deck), A = L4 deep drift (+ filter / amp / chord / slide / microtime). Footer reads `RANDOMIZE?` while both shoulders are held with a valid selection |
 | **L3** | Toggle modulator screen |
 | **R3** | Toggle master screen |
 | **START** | Transport play / pause |
@@ -707,7 +720,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Double-tap A to copy.** Cut plus immediate paste-back equals source restored plus clipboard primed. Faster than a dedicated copy gesture.
 - **Recording survives song mode.** You can arm REC before entering song mode and the entire song will be captured front to back.
 - **Auto-load on boot picks up where you left off.** No need to hunt for the last project in the load list.
-- **Randomize ladders well from sparse to dense.** Hold L1 + R1 on a selection, then tap B → B → B → B to fill 25 / 50 / 75 / 100 % of the cells with your last-copied step before any pitch / engine randomness kicks in. Switch to X / A when you want to layer extra mutation on top, the density cycle restarts each time you change level. Tap Y to mutate just the focused parameter (note, filter, chord, etc.) on the populated steps without touching their other params.
+- **Randomize ladders well from sparse to dense.** Hold L1 + R1 on a selection, then tap B → B → B → B to fill 25 / 50 / 75 / 100 % of the cells with your last-copied step. Tap Y to mutate just the focused parameter (note, filter, chord, etc.) on the populated steps without touching anything else. Then layer X / A on top to drift what's there: your step distribution never changes above level 1, so a groove you like stays a groove while its sound evolves. The cycle restarts each time you change level.
 
 ---
 
@@ -736,7 +749,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Master 16th**: one tick of the master clock, regardless of any track's clock divider.
 - **Live launch**: a pattern swap on a single track, queued at the next bar.
 - **Modulator**: a small per-scene LFO that nudges a chosen parameter on a chosen track over time. 8 slots per scene.
-- **Randomize**: L1 + R1 + face button on a multi-cell step-grid selection. Four levels: B = density stamp from clipboard; Y = level 2, mutates only the focused parameter on populated steps in place; X = density + pitch + engine; A = full per-engine randomization. Same-level presses cycle density 25/50/75/100 → wrap. L2 same-(param) presses widen the ±N range 5/10/30/60 → wrap.
+- **Randomize**: L1 + R1 + face button on a multi-cell step-grid selection. Four levels: B = density stamp from clipboard (the only level that creates/deletes steps); Y = level 2, mutates only the focused parameter on populated steps in place; X = level 3, in-place drift of pitch + engine + right deck; A = level 4, deep drift adding filter / amp env / chord / slide / microtime. Same-level presses escalate 25/50/75/100 % (L1 fill density; L3/L4 coverage AND intensity) → wrap. L2 same-(param) presses widen the ±N range 5/10/30/60 → wrap.
 - **Run mode** (modulator): FRE = continuous; TRG = phase resets on each note; ONE = one cycle per note, then freezes.
 - **S&H** (sample & hold): a waveform that holds a value for the cycle, then jumps to the next from a per-slot 16-value random table.
 
