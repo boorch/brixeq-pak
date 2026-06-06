@@ -10,6 +10,18 @@ BRIXEQ is a tracker-ish step sequencer with **per-step instrument snapshots**: e
 
 The trade-off this buys you: you can build hugely expressive 16-step patterns that morph through different timbres without managing instrument slots, and you can copy any single step onto another to clone its entire instrument character.
 
+### The one workflow to know
+
+Sound design in BRIXEQ is clipboard-driven. Internalise this loop and the rest of the manual is detail:
+
+1. **B** on an empty cell places a step with the default sound (a clean VA at C4).
+2. **Shape it** on the decks: pitch, engine, envelope, filter, whatever the part needs.
+3. **Tap A twice** on the finished step. The first tap cuts it, the second pastes it straight back: the step is untouched, but your clipboard now holds the complete sound.
+4. Move to an empty cell, **tap A** to paste the sound there, then just change the note.
+5. Repeat: paste, re-pitch, tweak.
+
+The clipboard is your instrument; **A** is how you play it across the grid.
+
 Five concurrent tracks let you stack a beat, a bass, a lead, a pad, and a percussive layer all at once. Master-bus delay, reverb, and compressor handle the glue.
 
 This whole **per-step instrument snapshots** idea (and many others you'll find throughout BRIXEQ) is basically based on FMS, a suepr fun FM groovebox for GBA, created by Fors. Check it out here: https://lo-bit.club/fms
