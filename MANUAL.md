@@ -24,7 +24,7 @@ The clipboard is your instrument; **A** is how you play it across the grid.
 
 Five concurrent tracks let you stack a beat, a bass, a lead, a pad, and a percussive layer all at once. Master-bus delay, reverb, and compressor handle the glue.
 
-This whole **per-step instrument snapshots** idea (and many others you'll find throughout BRIXEQ) is basically based on FMS, a suepr fun FM groovebox for GBA, created by Fors. Check it out here: https://lo-bit.club/fms
+This whole **per-step instrument snapshots** idea (and many others you'll find throughout BRIXEQ) is basically based on FMS, a super fun and extremely well designed FM groovebox for GBA, created by Fors. Check it out here: https://lo-bit.club/fms
 
 BRIXEQ is specifically developed for TrimUI Brick. You may run it on other Linux systems on various handheld devices, but your mileage may vary, and it's unsupported.
 
