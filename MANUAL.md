@@ -24,7 +24,7 @@ The clipboard is your instrument; **A** is how you play it across the grid.
 
 Five concurrent tracks let you stack a beat, a bass, a lead, a pad, and a percussive layer all at once. Master-bus delay, reverb, and compressor handle the glue.
 
-This whole **per-step instrument snapshots** idea (and many others you'll find throughout BRIXEQ) is basically based on FMS, a super fun and extremely well designed FM groovebox for GBA, created by Fors. Check it out here: https://lo-bit.club/fms
+The core idea behind BRIXEQ, that a step holds **all** of its instrument parameters rather than pointing at a shared patch or instrument slot, was originated by **nanoloop** (by Oliver Wittchow), the groovebox that pioneered it. Many of BRIXEQ's other ideas are gratefully borrowed, and in some cases enhanced and taken further, from **FMS**, a super fun and beautifully designed FM groovebox for GBA by Fors. Check both out: nanoloop at https://nanoloop.com and FMS at https://lo-bit.club/fms
 
 BRIXEQ is specifically developed for TrimUI Brick. You may run it on other Linux systems on various handheld devices, but your mileage may vary, and it's unsupported.
 
@@ -310,6 +310,8 @@ The right deck swaps wholesale when the step's engine changes. Each row holds ex
 ### Chord stack
 
 A step can play up to **five voices simultaneously**: one root note (the step's pitch) plus four semitone offsets. Offset 0 equals an unused slot, so the count is effectively variable. Voices share the step's engine and envelope; transpose and scale-quantize apply to the whole stack.
+
+Each offset ranges from **0 to 35 semitones** (just shy of three octaves), so voicings can spread far wider than a single octave. The cell shows each offset as one **base36** digit (`0`-`9` then `A`-`Z`, so `A` = 10, `O` = 24, `Z` = 35); the tooltip spells out the plain `+N` semitone value. A voice whose root + offset lands above the normal pitch range still plays, it just rings very high (handy if you want it as a texture, ignore it otherwise).
 
 This is the chord model: dial in `+0 +4 +7 +12` and the step plays a major triad with octave. Polyphony is **intra-track only**, a fresh trigger on the same track cuts off the previous voices on that track.
 
