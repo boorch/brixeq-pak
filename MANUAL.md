@@ -254,7 +254,7 @@ While both shoulders are held with a valid selection (≥ 2 cells on the step gr
 
 **Level 2 on `chord`**. When the focused param is `chord`, level 2 always rolls a fresh chord for each populated step, regardless of whether the clipboard step actually carried a chord. Here the "detents" are the chord shapes themselves, and the pool widens with the cycle: cycle 1 picks maj / min (50/50); cycle 2 adds 7ths at lower weight; cycle 3 makes the four core triads/7ths equal; cycle 4 is uniform across all nine shapes (maj, min, maj7, min7, sus2, sus4, add9, maj-add9, min-add9). maj / min picks retain the 33 % chance to add a +12 octave as a third voice, same as level 4.
 
-Changing the selection (re-anchoring, resizing), pressing a different level button, or — at level 2 — switching the active param, resets the cycle to press 1.
+Changing the selection (re-anchoring, resizing), pressing a different level button, or (at level 2) switching the active param, resets the cycle to press 1.
 
 **Level 3 drift.** Per touched step: 50 % chance the note stays, otherwise it drifts ±3 / 5 / 8 / 12 semitones (by cycle), scale-snapped on VA / FM. The engine re-rolls with 25 / 50 / 75 / 100 % chance **within the step's own family** (VA ⇄ FM, NOIZ ⇄ CY, BD ⇄ SD), and the right deck is *not* reset on a swap: every step stores all engine families, so the swap just reveals the step's dormant values for the new engine. Right-deck params then drift ±2.5…10 % of their range around their own values.
 
@@ -317,7 +317,7 @@ This is the chord model: dial in `+0 +4 +7 +12` and the step plays a major triad
 
 Per-step nudge of the audible fire moment off the grid, edited from the **microtime** cell in the RULE row of the left deck. Seven discrete values render as 4-char labels on the cell:
 
-`▲50%` — `▲33%` — `▲16%` — `----` (on grid) — `▼16%` — `▼33%` — `▼50%`
+`▲50%` - `▲33%` - `▲16%` - `----` (on grid) - `▼16%` - `▼33%` - `▼50%`
 
 The ▲ glyph means **earlier** in time (above the playhead in the tracker's downward flow); ▼ means **later**. The size is in percent of nominal step duration, so it tracks both BPM and the pattern's clock divider automatically.
 
@@ -728,7 +728,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Modulators are per scene.** 8 LFOs that ride along on every scene swap. L3 to open, L3 again to leave. Try ONE + S&H on pitch for per-note random offsets, or FRE + slow sine on filter freq for a moving pad.
 - **Master sends are envelope-gated.** A snare with a short decay sends a single sharp tap into the reverb; a held pad sustains the send open. Take advantage of this: different envelope shapes give wildly different bus-FX flavours.
 - **Audition before you cut.** B-tap on the focused step plays its snapshot instantly. Pair with A (cut) and a cursor move + A (paste) to clone the exact instrument character to another step without waiting for the sequencer to come around.
-- **Trigless steps morph the held note.** A row of trigless steps with sweeping filter freqs gives you continuous filter motion without retriggering. Same trick works for FM index, VA morph, drum body, pan, sends. The amp envelope keeps playing through — no clicks.
+- **Trigless steps morph the held note.** A row of trigless steps with sweeping filter freqs gives you continuous filter motion without retriggering. Same trick works for FM index, VA morph, drum body, pan, sends. The amp envelope keeps playing through, no clicks.
 - **Double-tap A to copy.** Cut plus immediate paste-back equals source restored plus clipboard primed. Faster than a dedicated copy gesture.
 - **Recording survives song mode.** You can arm REC before entering song mode and the entire song will be captured front to back.
 - **Auto-load on boot picks up where you left off.** No need to hunt for the last project in the load list.
