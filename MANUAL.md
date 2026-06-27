@@ -247,7 +247,7 @@ While both shoulders are held with a valid selection (≥ 2 cells on the step gr
 
 **Level 2 range cycling**. Consecutive same-(level, active param) presses widen the ±N window around the clipboard's value at that field, wrapping 1 → 2 → 3 → 4 → 1. The window is calibrated for a full 0-FF byte (cycle 1 = ±5, cycle 2 = ±10, cycle 3 = ±30, cycle 4 = ±60) and **rescaled to the field's own range** for narrower params, so a small field like `probability` (0-3) or `noise mode` (0-4) still gets a real ladder instead of saturating on every cycle (cycle 4 reaches roughly the full span; lower cycles ladder up to it). The result is clamped to the field's legal range. Special cases:
 
-- **`note`**: the offset is in semitones, scale-snapped on melodic engines (VA / FM), raw on drums.
+- **`note`**: the offset is in semitones, scale-snapped on melodic engines (VA / FM / String), raw on drums.
 - **`microtime`**: walks the 7 legal detents (▲50 … ▼50) so it never lands on an unreachable in-between value.
 - **`engine`**: not a ±N walk (a 6-value list would bias toward the ends). Instead the cycle sets the *chance* the engine changes (25 / 50 / 75 / 100 %); when it changes, the new engine is drawn from the clipboard's own pool (melodic stays melodic, drums stay drums), so a track never scatters across families.
 - **`chord`**: see below.
@@ -256,7 +256,7 @@ While both shoulders are held with a valid selection (≥ 2 cells on the step gr
 
 Changing the selection (re-anchoring, resizing), pressing a different level button, or (at level 2) switching the active param, resets the cycle to press 1.
 
-**Level 3 drift.** Per touched step: 50 % chance the note stays, otherwise it drifts ±3 / 5 / 8 / 12 semitones (by cycle), scale-snapped on VA / FM. The engine re-rolls with 25 / 50 / 75 / 100 % chance **within the step's own family** (VA ⇄ FM, NOIZ ⇄ CY, BD ⇄ SD), and the right deck is *not* reset on a swap: every step stores all engine families, so the swap just reveals the step's dormant values for the new engine. Right-deck params then drift ±2.5…10 % of their range around their own values.
+**Level 3 drift.** Per touched step: 50 % chance the note stays, otherwise it drifts ±3 / 5 / 8 / 12 semitones (by cycle), scale-snapped on VA / FM / String. The engine re-rolls with 25 / 50 / 75 / 100 % chance **within the step's own family** (VA ⇄ FM, NOIZ ⇄ CY, BD ⇄ SD), and the right deck is *not* reset on a swap: every step stores all engine families, so the swap just reveals the step's dormant values for the new engine. Right-deck params then drift ±2.5…10 % of their range around their own values.
 
 **Level 4 drift.** Everything level 3 does, with the right-deck drift widened to ±10…50 %. Melodic steps additionally drift filter freq / Q / env decay / env depth and amp attack / decay (±5…30 %), may roll a fresh chord (15…60 % chance; the pool widens with the cycle exactly like level 2's chord mode, and a failed roll keeps the existing chord), and may flip slide on/off (10…25 %). All engines walk microtime along the 7 legal detents (same model as level 2's microtime mode). NOIZ steps also walk their noise mode.
 
@@ -337,14 +337,15 @@ Adjacent `±50%` steps (e.g. a `+50%` step right before a `-50%` step) fire at t
 
 ## 8. Engines
 
-Six engines, selectable per-step:
+Seven engines, selectable per-step:
 
 - **VA**: virtual analog. Three timbre macros (harmonics, timbre, morph) blend continuously between several oscillator characters. Plus overdrive. Pitched.
 - **FM**: two-operator FM. Modulator ratio, depth, feedback, attack, decay. Carrier is a fixed sine. Pitched, percussive bite.
-- **NOIZ**: noise generator. Several noise types (narrow, white, pink, brown) cover the range from tonal hiss to dark rumble. The lowpass and highpass on the left deck shape it. Mostly unpitched (the note value tunes the narrow noise modes).
+- **STRING**: a physically-modelled, inharmonic string with a vast range, from plucked and bowed strings to bells and lush synth-string ensembles. Harmonics sets the inharmonicity / material (a pure harmonic string sweeping toward metallic, bell-like overtones), timbre sets the excitation brightness and grain density, and morph sets the decay time (from a short damped pluck to a long ring). **Excite** reshapes how the string is driven: at 0 it's a clean, deterministic pluck (with morph's decay fully in play); raise it and random excitation triggers fade in for a randomized, scattered plucking feel, push it further and it becomes a continuous, noisy bowed drone. Plus overdrive. Pitched.
 - **BD**: 808/909-style bass drum.
 - **SD**: 808/909-style snare drum.
 - **CY**: hi-hat / cymbal. Covers both sounds via the timbre and morph controls.
+- **NOIZ**: noise generator. Several noise types (narrow, white, pink, brown) cover the range from tonal hiss to dark rumble. The lowpass and highpass on the left deck shape it. Mostly unpitched (the note value tunes the narrow noise modes). Pinned last in the engine cycle.
 
 Drum engines **ignore the per-scene transpose strip and the scale quantizer**. The drum's note value still tunes the synthesized body (so the step's pitch picks the kick / snare / hat pitch), but the scene-level transpose and scale snap pass would only push those tunings around against the user's intent. The four body params (timbre, morph, harmonics, model) carry the per-step character.
 
@@ -519,7 +520,7 @@ Universal (always live), listed in the D cell's cycle order, which follows the l
 
 - Pitch, Amp Attack, Amp Hold, Amp Decay, Filter Freq, Filter Q, Filter Env Attack, Filter Env Decay, Filter Env Depth, Volume, Pan, Delay Send, Reverb Send.
 
-After the universals the cycle walks the engines in deck order, VA → FM → NOIZ → BD → SD → CY, each engine's params in its own right-deck order.
+After the universals the cycle walks the engines in deck order, VA → FM → STRING → BD → SD → CY (NOIZ has no sweepable param, so it is not a destination), each engine's params in its own right-deck order.
 
 Engine-specific (silent when the target track isn't using that engine):
 
@@ -756,7 +757,7 @@ The last project saved or loaded is remembered and re-loaded automatically on th
 - **Step**: one cell in a pattern. Carries a complete instrument snapshot.
 - **Scene**: a snapshot of {one pattern per track, scale, transpose, master FX, modulators}. A project has 16.
 - **Song**: a linear list of scene references (and overrides), up to 128 rows long.
-- **Engine**: the synthesis algorithm for a step. Six available: VA, FM, NOIZ, BD, SD, CY.
+- **Engine**: the synthesis algorithm for a step. Seven available: VA, FM, STRING, BD, SD, CY, NOIZ.
 - **Trigless**: a step that does NOT retrigger. Instead, when the playhead lands on it, its full params lock onto the currently-sounding voice on that track (filter, FM/VA/drum body, pan, level, sends). Envelopes keep their state; LFOs in TRIG/ONCE mode are not re-armed.
 - **Chord stack**: root pitch plus up to 4 semitone offsets played together by the step.
 - **Bar**: 16 master 16th-notes. The unit scene queues and song-row durations work in.
